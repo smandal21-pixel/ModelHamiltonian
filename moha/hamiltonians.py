@@ -685,95 +685,70 @@ class HamRG(HamHeisenberg):
             connectivity=connectivity
         )
 
-class AlternativeSpinHamiltonian: # (Add inheritance here if required by the repo)
+
+class AlternativeSpinHamiltonian:
     """
     Implementation of the alternative approach to Spin Hamiltonians.
     Reference: Issue #179
     """
-    def __init__(self, num_spins, coupling_constants):
-        self.num_spins = num_spins
-        # Convert inputs to numpy arrays immediately for performance
-        self.J = np.array(coupling_constants)
-
-    def get_sz_operator(self, site_index):
-        """
-        Generates the Sz operator for a specific spin site in an N-spin system.
-        site_index: The index of the spin (0 to num_spins - 1)
-        """
-        sz = 0.5 * np.array([[1, 0], [0, -1]])
-        identity = np.eye(2)
+    def __init__(self, num_spins, coupling_constants, connectivity=None):
+        self.num_spins = int(num_spins)
+        # Convert to numpy array immediately for safety
+        self.J = np.array(coupling_constants) 
         
-        # Start with the first site
-        if site_index == 0:
-            op = sz
+        # Default to a 1D chain if no connectivity is provided.
+        if connectivity is None or len(connectivity) == 0:
+            self.connectivity = [(i, i + 1) for i in range(self.num_spins - 1)]
         else:
-            op = identity
-            
-        # Chain the rest of the sites using the Kronecker product
-        for i in range(1, self.num_spins):
-            if i == site_index:
-                op = np.kron(op, sz)
-            else:
-                op = np.kron(op, identity)
-        
-        return op
-    
-    def generate_integrals(self):
-        """
-        Core logic to generate 1- and 2-electron integrals.
-        This is where the new 'alternative' math goes.
-        """
-        # Placeholder for the actual mathematical mapping
-        integrals = np.zeros((self.num_spins, self.num_spins))
-        
-        # ... vectorized numpy logic will go here ...
-        
-        return integrals
-   
+            self.connectivity = connectivity
+
     def get_operator(self, site_index, op_type='z'):
         """
-        Generates Sx, Sy, or Sz for a specific site.
+        Generates Sx, Sy, or Sz for a specific site using the Kronecker product.
         op_type: 'x', 'y', or 'z'
         """
         if op_type == 'x':
             base_op = 0.5 * np.array([[0, 1], [1, 0]])
         elif op_type == 'y':
-            base_op = 0.5 * np.array([[0, -1j], [1j, 0]]) # 1j is 'i' in Python
+            base_op = 0.5 * np.array([[0, -1j], [1j, 0]]) 
         else:
             base_op = 0.5 * np.array([[1, 0], [0, -1]])
 
         identity = np.eye(2)
         op = base_op if site_index == 0 else identity
 
+        # Chain the rest of the sites
         for i in range(1, self.num_spins):
             next_op = base_op if i == site_index else identity
             op = np.kron(op, next_op)
+            
         return op
-    
-    def __init__(self, num_spins, coupling_constants, connectivity=None):
-        self.num_spins = num_spins
-        self.J = coupling_constants
-        # connectivity is a list of tuples like [(0, 1), (1, 2)]
-        self.connectivity = connectivity if connectivity else []
     
     def generate_integrals(self):
         """
         Builds the full Heisenberg Hamiltonian matrix.
         H = sum over <i,j> of J * (Sx_i*Sx_j + Sy_i*Sy_j + Sz_i*Sz_j)
         """
-        dim = 2**self.num_spins
-        # Use complex128 because Sy contains imaginary numbers
+        dim = 2 ** self.num_spins
         h_matrix = np.zeros((dim, dim), dtype=np.complex128)
 
-        # Loop through each connected pair
+        # Safely extract the J value
+        try:
+            J_val = float(self.J[0] if self.J.size > 0 else 1.0)
+        except (TypeError, IndexError):
+            J_val = 1.0
+
+        
         for (i, j) in self.connectivity:
-            # Calculate Sx_i * Sx_j + Sy_i * Sy_j + Sz_i * Sz_j
+            # Calculate Sx_i*Sx_j + Sy_i*Sy_j + Sz_i*Sz_j
             for term in ['x', 'y', 'z']:
                 op_i = self.get_operator(i, term)
                 op_j = self.get_operator(j, term)
-                # Multiply the matrices and add to total
-                h_matrix += self.J[0] * (op_i @ op_j) 
+                
+               
+                h_matrix += J_val * (op_i @ op_j) 
 
-        return h_matrix
+        # The Heisenberg Hamiltonian is Hermitian, so we return the real part.
+        return h_matrix.real
         
         
