@@ -1,39 +1,26 @@
 import numpy as np
-# We import your class from the moha folder
 from moha.hamiltonians import AlternativeSpinHamiltonian
 
-# Let's test with 2 spins (Matrix should be 4x4)
+# Initialize 2-spin system with homogeneous coupling
 n_spins = 2
-couplings = [1.0, 1.0] 
-
-print(f"--- Testing AlternativeSpinHamiltonian with {n_spins} spins ---")
+couplings = [1.0] 
 model = AlternativeSpinHamiltonian(n_spins, couplings)
 
-# Get Sz for the first spin (index 0)
-sz0 = model.get_sz_operator(0)
+print(f"Testing AlternativeSpinHamiltonian (Spins: {n_spins})")
+H_matrix = model.generate_integrals()
 
-print("Matrix for Sz(0):")
-print(sz0)
-print(f"Shape: {sz0.shape}")
+print("\nHamiltonian Matrix:")
+print(H_matrix)
 
-# Verification: The trace of Sz should be 0
-if np.trace(sz0) == 0:
-    print("\n✅ Success: Trace is 0. The physics looks correct.")
+# Verify eigenvalues against analytical solutions for 2-spin Heisenberg model
+energies = np.linalg.eigvals(H_matrix)
+sorted_energies = np.sort(energies.real)
+
+print("\nCalculated Eigenvalues:")
+print(sorted_energies)
+
+expected = np.array([-0.75, 0.25, 0.25, 0.25])
+if np.allclose(sorted_energies, expected):
+    print("\nStatus: Passed ")
 else:
-    print("\n❌ Error: Trace is not 0. Check the Sz matrix definition.")
-    
-from moha.hamiltonians import AlternativeSpinHamiltonian
-import numpy as np
-
-# 2 spins, connected (0, 1)
-conn = [(0, 1)]
-model = AlternativeSpinHamiltonian(2, [1.0], connectivity=conn)
-
-H = model.generate_integrals()
-print("Full Hamiltonian Matrix (Heisenberg 2-spin):")
-print(H)
-
-# Physics check: Eigenvalues (Energy levels)
-energies = np.linalg.eigvals(H)
-print("\nEnergy Levels (Eigenvalues):")
-print(np.sort(energies.real))    
+    print("\nStatus: Failed - Eigenvalues deviate from analytical expectations.")
