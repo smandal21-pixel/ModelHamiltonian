@@ -707,50 +707,7 @@ class AlternativeSpinHamiltonian(HamHeisenberg):
     """
     def __init__(self, num_spins, coupling_constants, connectivity=None):
         self.num_spins = int(num_spins)
-<<<<<<< HEAD
         
-=======
-        # Convert to numpy array immediately for safety
-        self.J = np.array(coupling_constants)
-
-        # Default to a 1D chain if no connectivity is provided.
-        if connectivity is None or len(connectivity) == 0:
-            self.connectivity = [(i, i + 1) for i in range(self.num_spins - 1)]
-        else:
-            self.connectivity = connectivity
-
-    def get_operator(self, site_index, op_type='z'):
-        """
-        Generates Sx, Sy, or Sz for a specific site using the Kronecker product.
-        op_type: 'x', 'y', or 'z'
-        """
-        if op_type == 'x':
-            base_op = 0.5 * np.array([[0, 1], [1, 0]])
-        elif op_type == 'y':
-            base_op = 0.5 * np.array([[0, -1j], [1j, 0]])
-        else:
-            base_op = 0.5 * np.array([[1, 0], [0, -1]])
-
-        identity = np.eye(2)
-        op = base_op if site_index == 0 else identity
-
-        # Chain the rest of the sites
-        for i in range(1, self.num_spins):
-            next_op = base_op if i == site_index else identity
-            op = np.kron(op, next_op)
-
-        return op
-
-    def generate_integrals(self):
-        """
-        Builds the full Heisenberg Hamiltonian matrix.
-        H = sum over <i,j> of J * (Sx_i*Sx_j + Sy_i*Sy_j + Sz_i*Sz_j)
-        """
-        dim = 2 ** self.num_spins
-        h_matrix = np.zeros((dim, dim), dtype=np.complex128)
-
-        # Safely extract the J value
->>>>>>> 79d1fa6ec7a8a09d4d8fa7da904484780d86cdab
         try:
             J_val = float(np.array(coupling_constants)[0] if np.array(coupling_constants).size > 0 else 1.0)
         except (TypeError, IndexError):
@@ -761,7 +718,6 @@ class AlternativeSpinHamiltonian(HamHeisenberg):
         else:
             self.connectivity_list = connectivity
 
-<<<<<<< HEAD
         J_matrix = np.zeros((self.num_spins, self.num_spins))
         for (i, j) in self.connectivity_list:
             J_matrix[i, j] = J_val
@@ -777,18 +733,3 @@ class AlternativeSpinHamiltonian(HamHeisenberg):
 
         
         
-=======
-
-        for (i, j) in self.connectivity:
-            # Calculate Sx_i*Sx_j + Sy_i*Sy_j + Sz_i*Sz_j
-            for term in ['x', 'y', 'z']:
-                op_i = self.get_operator(i, term)
-                op_j = self.get_operator(j, term)
-
-
-                h_matrix += J_val * (op_i @ op_j)
-
-        # The Heisenberg Hamiltonian is Hermitian, so we return the real part.
-        return h_matrix.real
-
->>>>>>> 79d1fa6ec7a8a09d4d8fa7da904484780d86cdab
